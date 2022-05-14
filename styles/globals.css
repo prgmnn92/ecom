@@ -761,3 +761,20 @@ margin-top: 160px;
   margin: auto;
 }
 }
+
+.canceled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 30vh;
+}
+
+.canceled-heading {
+  padding: 1rem 0;
+  font-size: 3rem;
+}
+
+.canceled-icon {
+  color: #f02d34;
+}

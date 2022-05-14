@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 
 const Context = createContext();
@@ -10,13 +10,44 @@ export const StateContext = ({ children }) => {
   const [totalQuantities, setTotalQuantities] = useState(0);
   const [qty, setQty] = useState(1);
 
+  useEffect(() => {
+    if (cartItems.length <= 0) return;
+
+    let pers = {
+      cartItems: [...cartItems],
+      totalPrice: totalPrice,
+      totalQuantities: totalQuantities,
+    };
+
+    localStorage.setItem("pers", JSON.stringify(pers));
+  }, [cartItems, totalPrice, totalQuantities]);
+
+  useEffect(() => {
+    let pers = localStorage.getItem("pers");
+
+    pers = JSON.parse(pers);
+
+    if (pers) {
+      pers.cartItems = pers.cartItems.filter((item) => (item ? true : false));
+      let q = 0;
+      let t = 0;
+      pers.cartItems.forEach((element) => {
+        q += element.quantity;
+        t += element.price * element.quantity;
+      });
+      setCartItems([...pers.cartItems]);
+      setTotalPrice(t);
+      setTotalQuantities(q);
+    }
+  }, []);
+
   let foundProduct;
   let index;
 
   const onAdd = (product, quantity) => {
-    const checkProductInCart = cartItems.find(
-      (item) => item._id === product._id
-    );
+    const checkProductInCart = cartItems.find((item) => {
+      return item?._id === product._id;
+    });
     setTotalPrice(
       (prevTotalPrice) => prevTotalPrice + product.price * quantity
     );
@@ -24,14 +55,17 @@ export const StateContext = ({ children }) => {
 
     if (checkProductInCart) {
       const updatedCartItems = cartItems.map((cartProduct) => {
-        if (cartProduct._id === product._id) {
+        if (cartProduct?._id === product._id) {
           return {
             ...cartProduct,
             quantity: cartProduct.quantity + quantity,
           };
+        } else {
+          //else case vergessen... dadurch wurde immer wieder ein undefined object hinzugefügt
+          return cartProduct;
         }
       });
-      setCartItems(updatedCartItems);
+      setCartItems([...updatedCartItems]);
       toast.success(`${qty} ${product.name} added to the cart`);
     } else {
       product.quantity = quantity;
@@ -41,13 +75,19 @@ export const StateContext = ({ children }) => {
 
   const onRemove = (id) => {
     foundProduct = cartItems.find((item) => item._id === id);
-    const newCartItems = cartItems.filter(item => item._id !== id)
-    setCartItems([...newCartItems])
-    setTotalPrice((prevTotalPrice) => prevTotalPrice - foundProduct.price * foundProduct.quantity);
-    setTotalQuantities((prevTotalQuantities) => prevTotalQuantities - foundProduct.quantity);
-
-    
-  }
+    const newCartItems = cartItems.filter((item) => item._id !== id);
+    if (newCartItems.length === 0) {
+      localStorage.removeItem("pers");
+    }
+    setCartItems([...newCartItems]);
+    setTotalPrice(
+      (prevTotalPrice) =>
+        prevTotalPrice - foundProduct.price * foundProduct.quantity
+    );
+    setTotalQuantities(
+      (prevTotalQuantities) => prevTotalQuantities - foundProduct.quantity
+    );
+  };
 
   const toggleCartItemQuantity = (id, value) => {
     foundProduct = cartItems.find((item) => item._id === id);
@@ -106,7 +146,7 @@ export const StateContext = ({ children }) => {
         setQty,
         setTotalPrice,
         setCartItems,
-        setTotalQuantities
+        setTotalQuantities,
       }}
     >
       {children}
